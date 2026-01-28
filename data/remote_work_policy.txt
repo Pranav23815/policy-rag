@@ -1,0 +1,18 @@
+**Remote & Hybrid Work Policy**
+
+**1. Hybrid Work Model**
+The company operates on a **Hybrid-First** model. Employees are expected to be in the office **2 days per week** (Tuesday and Thursday are designated "Collaboration Days"). The remaining 3 days may be worked remotely from a location of the employee's choice within the country.
+
+**2. Core Hours**
+To facilitate collaboration across time zones, all employees (remote and in-office) must be available during **Core Hours: 10:00 AM to 3:00 PM EST**.
+Flexible scheduling is permitted outside of these hours, provided 40 hours are worked per week.
+
+**3. Fully Remote Employees**
+Fully remote roles are available for specific engineering and support positions, subject to manager approval. Fully remote employees are not required to come to the office but may be asked to travel for quarterly "All-Hands" meetings.
+*Travel expenses for mandatory meetings will be covered by the company.*
+
+**4. Equipment**
+The company provides a laptop, monitor, and noise-cancelling headphones for all employees. Remote employees may request a one-time **$500 Home Office Stipend** to purchase a desk or chair.
+
+**5. Security**
+Remote work must be conducted on a secure, private Wi-Fi network. Working from public Wi-Fi (cafes, airports) without the corporate VPN active is strictly prohibited.
