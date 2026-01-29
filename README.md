@@ -1,89 +1,69 @@
-# Policy RAG CLI Tool
+Policy RAG CLI Tool
+Overview This is a production-grade Retrieval-Augmented Generation (RAG) tool. It allows employees to ask questions about company policies (Refunds, Shipping, Remote Work) and get accurate answers backed by citations. It uses Llama 3.3 (via Groq) for inference and ChromaDB for retrieval.
 
-A production-grade Retrieval-Augmented Generation (RAG) CLI tool for answering questions about company policies.
+Features
 
-## Features
-- **Retrieval:** Uses ChromaDB with standard cosine similarity.
-- **Reranking:** Sorts retrieved documents using `CrossEncoder` for higher relevance.
-- **Orchestration:** LangGraph (StateGraph) manages the pipeline flow.
-- **Validation:** Pydantic ensures structured, valid JSON output.
-- **Anti-Hallucination:** Strict prompts enforce honesty.
+Retrieval: Uses ChromaDB to find relevant policy documents.
 
-## Setup Instructions
+Reranking: Uses a Cross-Encoder to filter results, ensuring high accuracy.
 
-1.  **Clone & Install Dependencies**
-    ```bash
-    pip install -r requirements.txt
-    ```
+Anti-Hallucination: The system refuses to answer if the information is missing.
 
-2.  **Environment Setup**
-    Copy the example env file and add your API key:
-    ```bash
-    cp .env.example .env
-    # Edit .env and set OPENAI_API_KEY=sk-...
-    ```
+Structured Output: Returns answers in JSON format with confidence scores.
 
-## Architecture Overview
+Setup Instructions
 
-The system processes a user query through the following LangGraph nodes:
+Step 1: Install Dependencies Run the following command in your terminal: pip install -r requirements.txt
 
-1.  **Retrieve (`Node 1`):**
-    -   Fetches top `k=10` documents from the ChromaDB vector store.
-    -   Model: `all-MiniLM-L6-v2` (HuggingFace).
+Step 2: Set up Environment Create a file named ".env" in your folder. Add your API key inside it like this: GROQ_API_KEY="your_actual_key_here"
 
-2.  **Rerank (`Node 2`):**
-    -   Scores the 10 documents against the query using a Cross-Encoder (`ms-marco-MiniLM-L-6-v2`).
-    -   Filters down to the top `k=3` highest-scoring documents.
-    -   **Benefit:** Improves precision by analyzing the query-document pair deeply, which vector similarity alone might miss.
+How to Run the Project
 
-3.  **Generate (`Node 3`):**
-    -   LLM: `gpt-4o-mini` (OpenAI).
-    -   Uses a strict system prompt and enforces JSON output via Pydantic.
+1. Ingest Data (Prepare the Database) Run this command to load the policy files: python src/ingest.py
 
-## Prompt Iteration: Naive vs. Structured
+2. Run Evaluation (Test the System) Run this command to check for accuracy: python evaluate.py
 
-We evolved the prompt strategy to ensure reliability:
+3. Start the Chat (Ask Questions) Run this command to start the tool: python main.py
 
-### Version 1: Naive (Unused)
-> "Answer the question based on the text."
+Architecture Overview
 
-*Why it fails:* It allows the model to seamlessly blend external knowledge with the context, leading to "plausible" hallucinations or answering out-of-policy questions (e.g., general knowledge) which is undesirable for a compliance tool.
+1. Data Ingestion We split the policy documents into small chunks (500 characters). This size was chosen because it captures single rules (like "30-day refund window") without mixing up different topics.
 
-### Version 2: Structured (Final)
-> "You are a helpful assistant for a company policy handbook. Answer ONLY using the provided context. If the answer is not in the context, strictly say 'I cannot find this information in the policy.' Do not hallucinate."
+2. Retrieval When you ask a question, the system searches ChromaDB for the top 10 most similar text chunks.
 
-*Why we use it:*
-1.  **Constraint:** Forces the model to admit ignorance ("I cannot find...") rather than guessing.
-2.  **Structure:** Helper text instructs it to act as a policy handbook assistant.
+3. Reranking We use a "Cross-Encoder" model to double-check those 10 chunks. It reads them carefully and picks the Top 3 that actually answer the question. This is much smarter than standard search.
 
-## Trade-offs
+4. Generation We send the Top 3 chunks to Llama 3.3. The system prompt forces the AI to be honest: if the answer isn't there, it must say "I cannot find this information."
 
-| Feature | Pros | Cons |
-| :--- | :--- | :--- |
-| **Reranking** | High retrieval accuracy; surfaces semantic matches better than simple vector search. | Adds latency (running a BERT model on 10 docs takes time); requires more compute. |
-| **Pydantic** | Guarantees specific JSON structure for frontend integration. | Slightly higher token cost; strict validation might fail if model outputs slightly malformed JSON (rare with GPT-4). |
-| **Small Chunks (500)** | Precise citations; less irrelevant noise. | May lose context if a rule spans multiple paragraphs (mitigated by overlap). |
+### Visual Workflow
+```mermaid
+graph LR
+    A[User Query] --> B(Retrieve Node)
+    B -->|Top 10 Docs| C(Rerank Node)
+    C -->|Top 3 Docs| D(Generate Node)
+    D --> E[Final Answer]
+    
+    subgraph Data Pipeline
+    F[PDF/TXT Policies] -->|Ingest| G[ChromaDB]
+    end
+    
+    G -.->|Search| B
 
-## Execution Guide
+Prompt Engineering
+Initial Attempt: We started with a simple prompt: "Answer the question based on the text."
 
-**1. Create Environment & Install**
-```bash
-python -m venv venv
-.\venv\Scripts\Activate.ps1
-pip install -r requirements.txt
-```
+Result: It hallucinated and gave vague answers.
 
-**2. Ingest Data (Prepare DB)**
-```bash
-python -m src.ingest
-```
+Final Version: We switched to a strict prompt: "You are a policy assistant. Answer ONLY using the provided context. If the answer is missing, say 'I cannot find this information'. Return the answer in JSON format."
 
-**3. Run Evaluation (Test Cases)**
-```bash
-python evaluate.py
-```
+Result: Zero hallucinations and clear citations.
 
-**4. Run CLI (Interactive)**
-```bash
-python main.py
-```
+Trade-offs & Reflections
+
+Why Groq & Llama 3.3? It is extremely fast and free to use, though it has strict rate limits compared to OpenAI.
+
+Why Reranking? It adds a small delay (latency), but it drastically improves accuracy. Without it, the system might miss subtle answers.
+
+What I am most proud of: Implementing the Reranking step. It stops the AI from guessing and forces it to select the absolute best evidence before answering.
+
+What I would improve next: I would implement "Hybrid Search" (combining keyword search with vector search) to handle exact ID lookups better.
