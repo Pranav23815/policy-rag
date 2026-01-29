@@ -48,7 +48,7 @@ graph LR
     end
 
     G -.->|Search| B
-    ```
+ ```
 
 Prompt Engineering
 Initial Attempt: We started with a simple prompt: "Answer the question based on the text."
