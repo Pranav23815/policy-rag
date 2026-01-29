@@ -42,11 +42,11 @@ graph LR
     B -->|Top 10 Docs| C(Rerank Node)
     C -->|Top 3 Docs| D(Generate Node)
     D --> E[Final Answer]
-    
+
     subgraph Data Pipeline
     F[PDF/TXT Policies] -->|Ingest| G[ChromaDB]
     end
-    
+
     G -.->|Search| B
 
 Prompt Engineering
